@@ -44,7 +44,15 @@ export async function handle({ event, resolve }) {
     throw redirect(303, '/dashboard');
   }
 
-  // Resolve the request
+  // Add cache control headers to prevent caching of protected pages
   const response = await resolve(event);
+  
+  if (event.url.pathname.startsWith('/dashboard')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+  }
+  
   return response;
 }

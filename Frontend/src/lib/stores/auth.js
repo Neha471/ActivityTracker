@@ -82,50 +82,51 @@ function createAuthStore() {
       }
     },
     logout: async () => {
-      // Clear the user store first
+      console.log('Initiating logout process');
+      
+      // Clear the user store
       set(null);
       
-      if (browser) {
-        // Get the current hostname
-        const hostname = window.location.hostname;
-        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        
-        // Clear all auth cookies with proper attributes
-        const cookies = ['auth_token', 'refresh_token', 'user'];
-        const cookieAttributes = [
-          'Path=/',
-          'Expires=Thu, 01 Jan 1970 00:00:01 GMT',
-          'SameSite=Strict',
-          'Secure',
-          'HttpOnly'
-        ];
-        
-        if (!isLocalhost) {
-          cookieAttributes.push(`Domain=${hostname}`);
-        }
-        
-        // Clear cookies
-        cookies.forEach(cookie => {
-          // Set the cookie with past expiry and empty value
-          document.cookie = `${cookie}=; ${cookieAttributes.join('; ')}`;
-          
-          // Also try to clear with . prefix for subdomains
-          if (!isLocalhost) {
-            document.cookie = `${cookie}=; ${cookieAttributes.join('; ').replace(`Domain=${hostname}`, `Domain=.${hostname}`)}`;
-          }
+      if (!browser) {
+        console.log('Not in browser environment, skipping logout');
+        return;
+      }
+      
+      try {
+        // First, try to call the server-side logout endpoint
+        const formData = new FormData();
+        const response = await fetch('/dashboard?/logout', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json'
+          },
+          body: formData,
+          credentials: 'same-origin',
+          // Add a timeout to prevent hanging
+          signal: AbortSignal.timeout(5000)
         });
         
-        // Clear local storage and session storage
+        if (!response.ok) {
+          console.warn('Server logout failed, falling back to client-side cleanup');
+          // Fall back to client-side cleanup
+          ['auth_token', 'refresh_token', 'user', 'session', 'token'].forEach(name => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.localhost`;
+          });
+        }
+        
+        // Clear all storage
         localStorage.clear();
         sessionStorage.clear();
         
-        // Use a small timeout to ensure cookies are cleared before redirect
-        setTimeout(() => {
-          // Use replaceState to prevent back button from going back to the authenticated page
-          window.history.replaceState({}, '', '/login');
-          // Force a full page reload to clear all state
-          window.location.href = '/login';
-        }, 100);
+        // Force a full page reload to clear any remaining state
+        window.location.href = '/login?logout=' + Date.now();
+        
+      } catch (error) {
+        console.error('Error during logout:', error);
+        // Still try to redirect even if there was an error
+        window.location.href = '/login?error=logout_failed';
       }
     },
     // Check if user is authenticated based on cookies

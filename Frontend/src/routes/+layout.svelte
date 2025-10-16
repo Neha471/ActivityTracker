@@ -4,7 +4,6 @@
   import { user } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
-  import Navbar from '$lib/components/Navbar.svelte';
   
   // Import global styles
   import '../app/app.css';
@@ -50,8 +49,6 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">
-  <Navbar {showAuth} />
-  
   <main class="flex-1">
     <slot></slot>
   </main>
