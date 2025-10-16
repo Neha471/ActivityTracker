@@ -15,17 +15,13 @@ declare global {
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new HttpException(401, 'No token provided');
-    }
+    
+    console.log("🚀 ~ authenticate ~ req.cookies:", req.cookies)
+    const token=req.cookies.auth_token;
 
-    const token = authHeader.split(' ')[1];
     if (!token) {
       throw new HttpException(401, 'No token provided');
     }
-
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number; email: string };
     if (!decoded) {
