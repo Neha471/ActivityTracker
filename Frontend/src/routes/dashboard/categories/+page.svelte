@@ -1,31 +1,31 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import type { ActivityCategory } from '$lib/types/activity';
-  import apiClient from '$lib/api/client';
-  
+  import { onMount } from "svelte";
+  import type { ActivityCategory } from "$lib/types/activity";
+  import apiClient from "$lib/api/client";
+
   let categories: ActivityCategory[] = [];
   let isLoading = true;
   let error: string | null = null;
-  
+
   let showForm = false;
   let editingCategory: ActivityCategory | null = null;
-  let newCategory = { name: '', color: '#6366f1', icon: '📝' };
+  let newCategory = { name: "", color: "#6366f1", icon: "📝" };
 
   async function fetchCategories() {
     try {
       isLoading = true;
       error = null;
-      const response = await apiClient.get('/activities/category/all');
-      
+      const response = await apiClient.get("/activities/category/all");
+
       if (!response.status) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.data;
       categories = data.data || [];
     } catch (e) {
-      console.error('Error fetching categories:', e);
-      error = e instanceof Error ? e.message : 'Failed to load categories';
+      console.error("Error fetching categories:", e);
+      error = e instanceof Error ? e.message : "Failed to load categories";
     } finally {
       isLoading = false;
     }
@@ -37,40 +37,65 @@
 
   function openCreate() {
     editingCategory = null;
-    newCategory = { name: '', color: '#6366f1', icon: '📝' };
+    newCategory = { name: "", color: "#6366f1", icon: "📝" };
     showForm = true;
   }
-  
+
   function openEdit(category: ActivityCategory) {
     editingCategory = category;
-    newCategory = { ...category };
+    newCategory = { 
+      name: category.name, 
+      color: category.color, 
+      icon: category.icon || '📝'  // Provide default icon if undefined
+    };
     showForm = true;
   }
-  
-  function saveCategory() {
-    // TODO: Implement API call to save/update category
-    if (editingCategory) {
-      // Edit existing
-      const index = categories.findIndex(c => c.id === editingCategory?.id);
-      if (index >= 0) {
-        categories[index] = { ...editingCategory, ...newCategory };
-        categories = [...categories];
+
+  async function saveCategory() {
+    try {
+      if (editingCategory) {
+        // Update existing category
+        const response = await apiClient.patch(
+          `/activities/category/${editingCategory.id}`,
+          {
+            name: newCategory.name,
+            color: newCategory.color,
+            icon: newCategory.icon,
+          }
+        );
+
+        // Update local state with the server response
+        const updatedCategory = response.data.data;
+        const index = categories.findIndex((c) => c.id === editingCategory?.id);
+        if (index >= 0) {
+          categories[index] = updatedCategory;
+          categories = [...categories]; // Trigger Svelte's reactivity
+        }
+      } else {
+        // Create new category
+        const response = await apiClient.post("/activities/category", {
+          name: newCategory.name,
+          color: newCategory.color,
+          icon: newCategory.icon,
+        });
+
+        // Add the new category to the list
+        const createdCategory = response.data.data;
+        categories = [...categories, createdCategory];
       }
-    } else {
-      // Create new
-      const newCat: ActivityCategory = {
-        id: crypto.randomUUID(),
-        ...newCategory
-      };
-      categories = [...categories, newCat];
+
+      // Close the form
+      showForm = false;
+    } catch (e) {
+      console.error("Error saving category:", e);
+      error = e instanceof Error ? e.message : "Failed to save category";
     }
-    showForm = false;
   }
-  
+
   function deleteCategory(category: ActivityCategory) {
     if (confirm(`Delete "${category.name}" category?`)) {
       // TODO: Implement API call to delete category
-      categories = categories.filter(c => c.id !== category.id);
+      categories = categories.filter((c) => c.id !== category.id);
     }
   }
 </script>
