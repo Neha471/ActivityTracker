@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Sidebar from '$lib/components/dashboard/Sidebar.svelte';
   import DailyWeeklyView from '$lib/components/activities/DailyWeeklyView.svelte';
   import type { Activity, ActivityLog, ActivityStats } from '$lib/types/activity';
 
@@ -99,19 +98,10 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 text-gray-900 flex">
-  <!-- Sidebar -->
-  <Sidebar />
-  
-  <!-- Main Content -->
-  <div class="flex-1 p-6">
-    <!-- Header -->
-    <div class="mb-8">
+<div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Activity Dashboard</h1>
       <p class="text-gray-600">Track your daily activities and build better habits</p>
     </div>
-
-    <!-- Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="flex items-center">
@@ -169,8 +159,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Daily/Weekly Tracking -->
     <DailyWeeklyView 
       {activities} 
       {activityLogs} 
@@ -178,5 +166,3 @@
       on:markMissed={handleMarkMissed}
       on:addNote={handleAddNote}
     />
-  </div>
-</div>
