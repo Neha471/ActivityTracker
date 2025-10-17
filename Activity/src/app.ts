@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 
 import activityRouter from './routes/activity.routes';
 import healthRouter from './routes/health.route';
+import statsRouter from './routes/stats.route';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { db } from './config/database';
 
@@ -82,6 +83,7 @@ class App {
     
     this.app.use('/health', healthRouter);
     this.app.use('/api/v1/activities', activityRouter);
+    this.app.use('/api/v1/stats', statsRouter);
     this.app.all('*', (req: Request, _res: Response, next: NextFunction) => {
       next(new Error(`Can't find ${req.originalUrl} on this server!`));
     });

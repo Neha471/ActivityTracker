@@ -15,9 +15,7 @@ declare global {
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
   try {
-    
-    console.log("🚀 ~ authenticate ~ req.cookies:", req.cookies)
-    const token=req.cookies.auth_token;
+    const token=req.cookies.auth_token || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       throw new HttpException(401, 'No token provided');
