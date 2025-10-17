@@ -86,17 +86,25 @@
 
     try {
       if (payload.id) {
+        // Update existing activity
+        const response = await apiClient.patch(`/activities/${payload.id}`, {
+          title: payload.title,
+          description: payload.description,
+          categoryId: payload.categoryId,
+          frequency: payload.frequency,
+          color: payload.color,
+          icon: payload.icon,
+          notes: payload.notes,
+        });
+
+        const updatedActivity = response.data.data;
+        
         activities = activities.map((a) =>
-          a.id === payload.id
+          a.id === updatedActivity.id
             ? {
                 ...a,
-                title: payload.title,
-                description: payload.description,
-                category: categories.find((c) => c.id === payload.categoryId)!,
-                frequency: payload.frequency,
-                color: payload.color,
-                icon: payload.icon,
-                notes: payload.notes,
+                ...updatedActivity,
+                category: categories.find((c) => c.id === updatedActivity.categoryId)!,
                 updatedAt: new Date().toISOString(),
               }
             : a
@@ -132,6 +140,10 @@
     } catch (e) {
       console.error("Error saving activity:", e);
       error = e instanceof Error ? e.message : "Failed to save activity";
+    }
+    finally{
+      isLoading = false;
+      showForm = false;
     }
   }
 
