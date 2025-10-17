@@ -10,7 +10,6 @@
 
   let activities: Activity[] = [];
 
-
   let categories: ActivityCategory[] = [];
   let isLoading = true;
   let error: string | null = null;
@@ -74,10 +73,14 @@
     showForm = true;
     console.log("openCreate");
   }
-  function openEdit(a: Activity) {
-    editing = a;
+  function openEdit(activity: Activity) {
+    // Create a deep copy of the activity to avoid reference issues
+    editing = {
+      ...activity,
+      category: { ...activity.category },
+      frequency: { ...activity.frequency },
+    };
     showForm = true;
-    console.log(a);
   }
 
   async function handleSave(e: CustomEvent<any>) {
@@ -98,13 +101,15 @@
         });
 
         const updatedActivity = response.data.data;
-        
+
         activities = activities.map((a) =>
           a.id === updatedActivity.id
             ? {
                 ...a,
                 ...updatedActivity,
-                category: categories.find((c) => c.id === updatedActivity.categoryId)!,
+                category: categories.find(
+                  (c) => c.id === updatedActivity.categoryId
+                )!,
                 updatedAt: new Date().toISOString(),
               }
             : a
@@ -136,14 +141,13 @@
           ...activities,
         ];
       }
-      showForm = false;
     } catch (e) {
       console.error("Error saving activity:", e);
       error = e instanceof Error ? e.message : "Failed to save activity";
-    }
-    finally{
+      throw e; // Re-throw to prevent the finally block from hiding the error
+    } finally {
       isLoading = false;
-      showForm = false;
+      showForm = false; // This will always run, whether there was an error or not
     }
   }
 
@@ -254,9 +258,14 @@
 </div>
 
 <ActivityManagement
-  isOpen={showForm}
-  {categories}
+  bind:isOpen={showForm}
   activity={editing}
-  on:save={handleSave}
-  on:cancel={handleCancel}
+  {categories}
+  on:save={(e) => {
+    handleSave(e);
+    showForm = false;
+  }}
+  on:cancel={() => {
+    showForm = false;
+  }}
 />

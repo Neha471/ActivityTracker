@@ -1,6 +1,12 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { Activity, CreateActivityDto, UpdateActivityDto, ActivityCategory, ActivityFrequency } from '$lib/types/activity';
+  import { createEventDispatcher } from "svelte";
+  import type {
+    Activity,
+    CreateActivityDto,
+    UpdateActivityDto,
+    ActivityCategory,
+    ActivityFrequency,
+  } from "$lib/types/activity";
 
   export let activity: Activity | null = null;
   export let isOpen = false;
@@ -12,105 +18,202 @@
   }>();
 
   let formData: CreateActivityDto = {
-    title: '',
-    description: '',
-    categoryId: '',
-    frequency: { type: 'daily', value: 1 },
-    color: '#6366f1',
-    icon: '',
-    notes: ''
+    title: "",
+    description: "",
+    categoryId: "",
+    frequency: { type: "daily", value: 1 },
+    color: "#6366f1",
+    icon: "",
+    notes: "",
   };
 
-  let selectedFrequencyType: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily';
+  let selectedFrequencyType: "daily" | "weekly" | "monthly" | "custom" =
+    "daily";
   let frequencyValue = 1;
   let selectedDays: number[] = [];
 
   const weekDays = [
-    { id: 1, name: 'Mon', full: 'Monday' },
-    { id: 2, name: 'Tue', full: 'Tuesday' },
-    { id: 3, name: 'Wed', full: 'Wednesday' },
-    { id: 4, name: 'Thu', full: 'Thursday' },
-    { id: 5, name: 'Fri', full: 'Friday' },
-    { id: 6, name: 'Sat', full: 'Saturday' },
-    { id: 0, name: 'Sun', full: 'Sunday' }
+    { id: 1, name: "Mon", full: "Monday" },
+    { id: 2, name: "Tue", full: "Tuesday" },
+    { id: 3, name: "Wed", full: "Wednesday" },
+    { id: 4, name: "Thu", full: "Thursday" },
+    { id: 5, name: "Fri", full: "Friday" },
+    { id: 6, name: "Sat", full: "Saturday" },
+    { id: 0, name: "Sun", full: "Sunday" },
   ];
 
   const activityIcons = [
-    '🏃‍♀️', '📚', '💪', '🧘‍♀️', '🎯', '💧', '🏋️‍♀️', '🚶‍♀️', '✍️', '🎨',
-    '🎵', '👥', '💻', '🍎', '😴', '📱', '🧹', '💊', '🎸', '📝'
+    "🏃‍♀️",
+    "📚",
+    "💪",
+    "🧘‍♀️",
+    "🎯",
+    "💧",
+    "🏋️‍♀️",
+    "🚶‍♀️",
+    "✍️",
+    "🎨",
+    "🎵",
+    "👥",
+    "💻",
+    "🍎",
+    "😴",
+    "📱",
+    "🧹",
+    "💊",
+    "🎸",
+    "📝",
   ];
 
   const colorOptions = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
-    '#10b981', '#06b6d4', '#84cc16', '#f97316', '#6b7280'
+    "#6366f1",
+    "#8b5cf6",
+    "#ec4899",
+    "#ef4444",
+    "#f59e0b",
+    "#10b981",
+    "#06b6d4",
+    "#84cc16",
+    "#f97316",
+    "#6b7280",
   ];
 
-  $: if (activity) {
-    formData = {
-      title: activity.title,
-      description: activity.description || '',
-      categoryId: activity.category.id,
-      frequency: activity.frequency,
-      color: activity.color,
-      icon: activity.icon || '',
-      notes: activity.notes || ''
-    };
-    selectedFrequencyType = activity.frequency.type;
-    frequencyValue = activity.frequency.value;
-    selectedDays = activity.frequency.specificDays || [];
+  // Reset form when the modal is opened or when the activity changes
+  $: if (isOpen) {
+    if (activity) {
+      // Editing an existing activity
+      formData = {
+        title: activity.title,
+        description: activity.description || "",
+        categoryId: activity.category?.id || "",
+        frequency: activity.frequency || { type: "daily", value: 1 },
+        color: activity.color || "#6366f1",
+        icon: activity.icon || "",
+        notes: activity.notes || "",
+      };
+      selectedFrequencyType = activity.frequency?.type || "daily";
+      frequencyValue = activity.frequency?.value || 1;
+      selectedDays = activity.frequency?.specificDays || [];
+    } else {
+      // Creating a new activity
+      formData = {
+        title: "",
+        description: "",
+        categoryId: "",
+        frequency: { type: "daily", value: 1 },
+        color: "#6366f1",
+        icon: "",
+        notes: "",
+      };
+      selectedFrequencyType = "daily";
+      frequencyValue = 1;
+      selectedDays = [];
+    }
   }
 
   function handleFrequencyChange() {
     formData.frequency = {
       type: selectedFrequencyType,
       value: frequencyValue,
-      ...(selectedFrequencyType === 'weekly' && { specificDays: selectedDays }),
-      ...(selectedFrequencyType === 'custom' && { period: 'week' })
+      ...(selectedFrequencyType === "weekly" && { specificDays: selectedDays }),
+      ...(selectedFrequencyType === "custom" && { period: "week" }),
     };
   }
 
   function toggleDay(dayId: number) {
     if (selectedDays.includes(dayId)) {
-      selectedDays = selectedDays.filter(id => id !== dayId);
+      selectedDays = selectedDays.filter((id) => id !== dayId);
     } else {
       selectedDays = [...selectedDays, dayId];
     }
     handleFrequencyChange();
   }
 
+  function closeForm() {
+    isOpen = false;
+    // Reset form after a short delay to allow the close animation to complete
+    setTimeout(() => {
+      if (activity) {
+        // Reset to the original activity data when editing
+        formData = {
+          title: activity.title,
+          description: activity.description,
+          categoryId: activity.category.id,
+          frequency: activity.frequency,
+          color: activity.color,
+          icon: activity.icon,
+          notes: activity.notes || "",
+        };
+      } else {
+        // Reset to default values when creating new
+        formData = {
+          title: "",
+          description: "",
+          categoryId: "",
+          frequency: { type: "daily", value: 1 },
+          color: "#6366f1",
+          icon: "",
+          notes: "",
+        };
+      }
+    }, 200);
+  }
+
   function handleSave() {
     handleFrequencyChange();
-    
-    if (activity) {
-      dispatch('save', { ...formData, id: activity.id });
-    } else {
-      dispatch('save', formData);
+
+    try {
+      if (activity) {
+        dispatch("save", { ...formData, id: activity.id });
+      } else {
+        dispatch("save", formData);
+      }
+      closeForm();
+    } catch (error) {
+      console.error("Error saving activity:", error);
+      // Still close the form even if there's an error
+      closeForm();
     }
   }
 
   function handleCancel() {
-    dispatch('cancel');
+    dispatch("cancel");
   }
 
-  $: isValid = formData.title.trim() && formData.categoryId && formData.frequency;
+  $: isValid =
+    formData.title.trim() && formData.categoryId && formData.frequency;
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  <div
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  >
+    <div
+      class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+    >
       <div class="p-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-900">
-            {activity ? 'Edit Activity' : 'Create New Activity'}
+            {activity ? "Edit Activity" : "Create New Activity"}
           </h2>
-          <button 
+          <button
             on:click={handleCancel}
             class="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Close"
           >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -118,7 +221,10 @@
         <form on:submit|preventDefault={handleSave} class="space-y-6">
           <!-- Title -->
           <div>
-            <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="title"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Activity Title *
             </label>
             <input
@@ -133,7 +239,10 @@
 
           <!-- Description -->
           <div>
-            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="description"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Description
             </label>
             <textarea
@@ -147,7 +256,10 @@
 
           <!-- Category -->
           <div>
-            <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="category"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Category *
             </label>
             <select
@@ -165,21 +277,26 @@
 
           <!-- Frequency -->
           <div>
-            <label for="frequency" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="frequency"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Frequency *
             </label>
             <div class="space-y-4">
               <!-- Frequency Type -->
               <div class="grid grid-cols-4 gap-2">
-                {#each ['daily', 'weekly', 'monthly', 'custom'] as type}
+                {#each ["daily", "weekly", "monthly", "custom"] as type}
                   <button
                     type="button"
-                    on:click={() => { selectedFrequencyType = type; handleFrequencyChange(); }}
-                    class="px-3 py-2 text-sm rounded-lg border transition-colors {
-                      selectedFrequencyType === type
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    }"
+                    on:click={() => {
+                      selectedFrequencyType = type;
+                      handleFrequencyChange();
+                    }}
+                    class="px-3 py-2 text-sm rounded-lg border transition-colors {selectedFrequencyType ===
+                    type
+                      ? 'bg-blue-500 text-white border-blue-500'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}"
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
@@ -187,7 +304,7 @@
               </div>
 
               <!-- Custom frequency value -->
-              {#if selectedFrequencyType === 'custom'}
+              {#if selectedFrequencyType === "custom"}
                 <div class="flex items-center space-x-2">
                   <input
                     type="number"
@@ -202,19 +319,21 @@
               {/if}
 
               <!-- Weekly day selection -->
-              {#if selectedFrequencyType === 'weekly' || selectedFrequencyType === 'custom'}
+              {#if selectedFrequencyType === "weekly" || selectedFrequencyType === "custom"}
                 <div>
-                  <p class="text-sm text-gray-600 mb-2">Select specific days:</p>
+                  <p class="text-sm text-gray-600 mb-2">
+                    Select specific days:
+                  </p>
                   <div class="flex flex-wrap gap-2">
                     {#each weekDays as day}
                       <button
                         type="button"
                         on:click={() => toggleDay(day.id)}
-                        class="px-3 py-2 text-sm rounded-lg border transition-colors {
-                          selectedDays.includes(day.id)
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }"
+                        class="px-3 py-2 text-sm rounded-lg border transition-colors {selectedDays.includes(
+                          day.id
+                        )
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}"
                       >
                         {day.name}
                       </button>
@@ -227,19 +346,21 @@
 
           <!-- Icon Selection -->
           <div>
-            <label for="icon-selection" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="icon-selection"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Icon
             </label>
             <div class="grid grid-cols-10 gap-2">
               {#each activityIcons as icon}
                 <button
                   type="button"
-                  on:click={() => formData.icon = icon}
-                  class="w-10 h-10 flex items-center justify-center text-lg border rounded-lg transition-colors {
-                    formData.icon === icon
-                      ? 'bg-blue-500 text-white border-blue-500'
-                      : 'bg-white border-gray-300 hover:bg-gray-50'
-                  }"
+                  on:click={() => (formData.icon = icon)}
+                  class="w-10 h-10 flex items-center justify-center text-lg border rounded-lg transition-colors {formData.icon ===
+                  icon
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'bg-white border-gray-300 hover:bg-gray-50'}"
                 >
                   {icon}
                 </button>
@@ -249,17 +370,21 @@
 
           <!-- Color Selection -->
           <div>
-            <label for="color-selection" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="color-selection"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Color
             </label>
             <div class="flex flex-wrap gap-2">
               {#each colorOptions as color}
                 <button
                   type="button"
-                  on:click={() => formData.color = color}
-                  class="w-8 h-8 rounded-full border-2 transition-transform {
-                    formData.color === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-                  }"
+                  on:click={() => (formData.color = color)}
+                  class="w-8 h-8 rounded-full border-2 transition-transform {formData.color ===
+                  color
+                    ? 'border-gray-800 scale-110'
+                    : 'border-gray-300'}"
                   style="background-color: {color};"
                   aria-label="Select color {color}"
                 ></button>
@@ -269,7 +394,10 @@
 
           <!-- Notes -->
           <div>
-            <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              for="notes"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
               Notes
             </label>
             <textarea
@@ -295,7 +423,7 @@
               disabled={!isValid}
               class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {activity ? 'Update' : 'Create'} Activity
+              {activity ? "Update" : "Create"} Activity
             </button>
           </div>
         </form>
