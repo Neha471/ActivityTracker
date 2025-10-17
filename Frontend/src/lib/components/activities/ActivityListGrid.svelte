@@ -148,16 +148,31 @@
     } finally {
       isLoading = false;
       showForm = false; // This will always run, whether there was an error or not
+      fetchActivities();
     }
   }
 
-  function handleCancel() {
-    showForm = false;
-  }
+  async function remove(activity: Activity) {
+    if (!confirm(`Are you sure you want to delete "${activity.title}"?`)) {
+      return;
+    }
 
-  function remove(a: Activity) {
-    if (confirm("Delete this activity?")) {
-      activities = activities.filter((x) => x.id !== a.id);
+    try {
+      isLoading = true;
+      const response = await apiClient.delete<{ status: boolean; message?: string }>(`/activities/${activity.id}`);
+      
+      if (response.data?.status) {
+        // Remove the activity from the local state
+        activities = activities.filter((a) => a.id !== activity.id);
+      } else {
+        throw new Error(response.data?.message || 'Failed to delete activity');
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete activity');
+    } finally {
+      isLoading = false;
+      fetchActivities();
     }
   }
 
