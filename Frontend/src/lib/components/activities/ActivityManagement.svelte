@@ -78,10 +78,8 @@
     "#6b7280",
   ];
 
-  // Reset form when the modal is opened or when the activity changes
   $: if (isOpen) {
     if (activity) {
-      // Editing an existing activity
       formData = {
         title: activity.title,
         description: activity.description || "",
@@ -95,7 +93,6 @@
       frequencyValue = activity.frequency?.value || 1;
       selectedDays = activity.frequency?.specificDays || [];
     } else {
-      // Creating a new activity
       formData = {
         title: "",
         description: "",
@@ -131,10 +128,8 @@
 
   function closeForm() {
     isOpen = false;
-    // Reset form after a short delay to allow the close animation to complete
     setTimeout(() => {
       if (activity) {
-        // Reset to the original activity data when editing
         formData = {
           title: activity.title,
           description: activity.description,
@@ -145,7 +140,6 @@
           notes: activity.notes || "",
         };
       } else {
-        // Reset to default values when creating new
         formData = {
           title: "",
           description: "",
@@ -171,7 +165,6 @@
       closeForm();
     } catch (error) {
       console.error("Error saving activity:", error);
-      // Still close the form even if there's an error
       closeForm();
     }
   }
@@ -192,7 +185,6 @@
       class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
     >
       <div class="p-6">
-        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-900">
             {activity ? "Edit Activity" : "Create New Activity"}
@@ -219,7 +211,6 @@
         </div>
 
         <form on:submit|preventDefault={handleSave} class="space-y-6">
-          <!-- Title -->
           <div>
             <label
               for="title"
@@ -237,7 +228,6 @@
             />
           </div>
 
-          <!-- Description -->
           <div>
             <label
               for="description"
@@ -254,7 +244,6 @@
             ></textarea>
           </div>
 
-          <!-- Category -->
           <div>
             <label
               for="category"
@@ -275,7 +264,6 @@
             </select>
           </div>
 
-          <!-- Frequency -->
           <div>
             <label
               for="frequency"
@@ -284,9 +272,8 @@
               Frequency *
             </label>
             <div class="space-y-4">
-              <!-- Frequency Type -->
               <div class="grid grid-cols-4 gap-2">
-                {#each ["daily", "weekly", "monthly", "custom"] as type}
+                {#each ["daily", "weekly", "monthly", "custom"] as const as type: "daily" | "weekly" | "monthly" | "custom"}
                   <button
                     type="button"
                     on:click={() => {
@@ -303,7 +290,6 @@
                 {/each}
               </div>
 
-              <!-- Custom frequency value -->
               {#if selectedFrequencyType === "custom"}
                 <div class="flex items-center space-x-2">
                   <input
@@ -318,7 +304,6 @@
                 </div>
               {/if}
 
-              <!-- Weekly day selection -->
               {#if selectedFrequencyType === "weekly" || selectedFrequencyType === "custom"}
                 <div>
                   <p class="text-sm text-gray-600 mb-2">
@@ -344,7 +329,6 @@
             </div>
           </div>
 
-          <!-- Icon Selection -->
           <div>
             <label
               for="icon-selection"
@@ -368,7 +352,6 @@
             </div>
           </div>
 
-          <!-- Color Selection -->
           <div>
             <label
               for="color-selection"
@@ -392,7 +375,6 @@
             </div>
           </div>
 
-          <!-- Notes -->
           <div>
             <label
               for="notes"
@@ -409,7 +391,6 @@
             ></textarea>
           </div>
 
-          <!-- Actions -->
           <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <button
               type="button"
