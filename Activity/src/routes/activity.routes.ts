@@ -22,6 +22,12 @@ router.patch('/:id', enhancedActivityController.updateActivity.bind(enhancedActi
 // Delete an activity
 router.delete('/:id', enhancedActivityController.deleteActivity.bind(enhancedActivityController));
 
+// mark activity as complete
+router.patch('/:id/mark-complete', enhancedActivityController.markActivityComplete.bind(enhancedActivityController));
+
+// mark activity as missed
+router.patch('/:id/mark-missed', enhancedActivityController.markActivityMissed.bind(enhancedActivityController));
+
 // Create a new category
 router.post('/category', enhancedActivityController.createCategory.bind(enhancedActivityController));
 
