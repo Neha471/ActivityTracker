@@ -1,11 +1,36 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import type { Activity, ActivityLog } from '$lib/types/activity';
   
   export let activities: Activity[] = [];
   export let activityLogs: ActivityLog[] = [];
   export let selectedDate: Date = new Date();
   export let viewType: 'daily' | 'weekly' = 'daily';
+
+  let todayActivities: Activity[] = [];
+  let isMounted = false;
+
+  $: if (isMounted) {
+    console.log('Activities or date changed, updating view');
+    console.log('Current activities:', activities);
+    console.log('Current date:', selectedDate);
+    
+    const filtered = getActivitiesDue(selectedDate);
+    console.log('Filtered activities:', filtered);
+    todayActivities = filtered;
+  }
+
+  onMount(() => {
+    console.log('selectedDate:', selectedDate);
+    console.log('activities:', activities);
+    isMounted = true;
+    todayActivities = getActivitiesDue(selectedDate);
+  });
+
+  $: if (isMounted) {
+    console.log('Activities prop changed, updating view');
+    todayActivities = getActivitiesDue(selectedDate);
+  }
 
   const dispatch = createEventDispatcher<{
     markComplete: { activityId: string; date: string };
@@ -20,35 +45,41 @@
     note: ''
   };
 
-  // Get activities due for the selected date
   function getActivitiesDue(date: Date): Activity[] {
+    if (!activities || activities.length === 0) return [];
+    
     const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
     
-    return activities.filter(activity => {
+    const filtered = activities.filter(activity => {
+      if (!activity.frequency) return false;
+      
       const freq = activity.frequency;
       
       switch (freq.type) {
         case 'daily':
           return true;
         case 'weekly':
-          return freq.specificDays?.includes(dayOfWeek) || false;
+          const isDue = freq.specificDays?.includes(dayOfWeek) || false;
+          return isDue;
         case 'monthly':
-          return date.getDate() === 1; // Simplified: due on 1st of month
+          const isFirstDay = date.getDate() === 1;
+          return isFirstDay;
         case 'custom':
-          return freq.specificDays?.includes(dayOfWeek) || false;
+          const isCustomDay = freq.specificDays?.includes(dayOfWeek) || false;
+          return isCustomDay;
         default:
           return false;
       }
     });
+    
+    return filtered;
   }
 
-  // Get activity status for a specific date
   function getActivityStatus(activityId: string, date: string): 'completed' | 'missed' | 'pending' {
     const log = activityLogs.find(l => l.activityId === activityId && l.date === date);
     return log?.status || 'pending';
   }
 
-  // Get the last 7 days for weekly view
   function getWeekDates(date: Date): Date[] {
     const dates = [];
     const startOfWeek = new Date(date);
@@ -106,7 +137,6 @@
 </script>
 
 <div class="bg-white rounded-2xl p-6 shadow-sm">
-  <!-- Header -->
   <div class="flex items-center justify-between mb-6">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">
@@ -121,7 +151,6 @@
     </div>
     
     <div class="flex items-center space-x-2">
-      <!-- View Toggle -->
       <div class="bg-gray-100 rounded-lg p-1 flex">
         <button
           on:click={() => viewType = 'daily'}
@@ -145,7 +174,6 @@
         </button>
       </div>
 
-      <!-- Date Navigation -->
       <div class="flex items-center space-x-2">
         <button
           on:click={() => {
@@ -183,107 +211,118 @@
     </div>
   </div>
 
-  <!-- Daily View -->
   {#if viewType === 'daily'}
     <div class="space-y-4">
-      {#if todayActivities.length === 0}
+      {#if !isMounted}
+        <div class="text-center py-12">
+          <div class="animate-pulse flex justify-center">
+            <div class="w-16 h-16 bg-gray-200 rounded-full"></div>
+          </div>
+          <p class="mt-4 text-gray-500">Loading activities...</p>
+        </div>
+      {:else if todayActivities.length === 0}
         <div class="text-center py-12">
           <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           </div>
-          <p class="text-gray-500">No activities due today</p>
+          <p class="text-gray-500">No activities for {selectedDate.toLocaleDateString()}</p>
+          <p class="text-sm text-gray-400 mt-2">Check back later or add new activities</p>
         </div>
       {:else}
-        {#each todayActivities as activity}
-          {@const status = getActivityStatus(activity.id, formatDate(selectedDate))}
-          <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-            <div class="flex items-center space-x-4">
-              <!-- Activity Icon & Color -->
-              <div 
-                class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl"
-                style="background-color: {activity.color};"
-              >
-                {activity.icon || '📝'}
-              </div>
-              
-              <!-- Activity Info -->
-              <div class="flex-1">
-                <h3 class="font-semibold text-gray-900">{activity.title}</h3>
-                <p class="text-sm text-gray-600">
-                  {activity.category.name} • 
-                  {activity.frequency.type === 'daily' ? 'Daily' : 
-                   activity.frequency.type === 'weekly' ? `Weekly (${activity.frequency.specificDays?.length || 0} days)` :
-                   activity.frequency.type === 'monthly' ? 'Monthly' :
-                   `${activity.frequency.value}x per ${activity.frequency.period}`}
-                </p>
-                {#if activity.description}
-                  <p class="text-sm text-gray-500 mt-1">{activity.description}</p>
-                {/if}
-              </div>
-
-              <!-- Status & Actions -->
-              <div class="flex items-center space-x-2">
-                {#if status === 'completed'}
-                  <div class="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-sm font-medium">Completed</span>
-                  </div>
-                {:else if status === 'missed'}
-                  <div class="flex items-center text-red-600 bg-red-100 px-3 py-1 rounded-full">
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-sm font-medium">Missed</span>
-                  </div>
-                {:else}
-                  <div class="flex items-center space-x-2">
-                    <button
-                      on:click={() => handleMarkComplete(activity.id, formatDate(selectedDate))}
-                      class="flex items-center text-green-600 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors"
-                    >
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span class="text-sm">Done</span>
-                    </button>
-                    <button
-                      on:click={() => handleMarkMissed(activity.id, formatDate(selectedDate))}
-                      class="flex items-center text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
-                    >
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span class="text-sm">Miss</span>
-                    </button>
-                  </div>
-                {/if}
-                
-                <!-- Note Button -->
-                <button
-                  on:click={() => openNoteModal(activity.id, formatDate(selectedDate))}
-                  class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Add note"
+        <div class="mb-4">
+          <h3 class="text-lg font-medium text-gray-900">
+            Activities for {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </h3>
+          <p class="text-sm text-gray-500">
+            {todayActivities.length} {todayActivities.length === 1 ? 'activity' : 'activities'} due
+          </p>
+        </div>
+        <div class="space-y-4">
+          {#each todayActivities as activity}
+            {@const status = getActivityStatus(activity.id, formatDate(selectedDate))}
+            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+              <div class="flex items-center space-x-4">
+                <div 
+                  class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl"
+                  style="background-color: {activity.color};"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
+                  {activity.icon || '📝'}
+                </div>
+                
+                <div class="flex-1">
+                  <h3 class="font-semibold text-gray-900">{activity.title}</h3>
+                  <p class="text-sm text-gray-600">
+                    {activity.category.name} • 
+                    {activity.frequency.type === 'daily' ? 'Daily' : 
+                     activity.frequency.type === 'weekly' ? `Weekly (${activity.frequency.specificDays?.length || 0} days)` :
+                     activity.frequency.type === 'monthly' ? 'Monthly' :
+                     `${activity.frequency.value}x per ${activity.frequency.period}`}
+                  </p>
+                  {#if activity.description}
+                    <p class="text-sm text-gray-500 mt-1">{activity.description}</p>
+                  {/if}
+                </div>
+
+                <div class="flex items-center space-x-2">
+                  {#if status === 'completed'}
+                    <div class="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-sm font-medium">Completed</span>
+                    </div>
+                  {:else if status === 'missed'}
+                    <div class="flex items-center text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-sm font-medium">Missed</span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center space-x-2">
+                      <button
+                        on:click={() => handleMarkComplete(activity.id, formatDate(selectedDate))}
+                        class="flex items-center text-green-600 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors"
+                      >
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span class="text-sm">Done</span>
+                      </button>
+                      <button
+                        on:click={() => handleMarkMissed(activity.id, formatDate(selectedDate))}
+                        class="flex items-center text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
+                      >
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span class="text-sm">Miss</span>
+                      </button>
+                    </div>
+                  {/if}
+                  
+                  <button
+                    on:click={() => openNoteModal(activity.id, formatDate(selectedDate))}
+                    class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Add note"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        {/each}
+          {/each}
+        </div>
       {/if}
     </div>
 
-  <!-- Weekly View -->
   {:else}
     <div class="overflow-x-auto">
       <div class="min-w-full">
-        <!-- Week Header -->
         <div class="grid grid-cols-7 gap-4 mb-4">
           {#each weekDates as date}
             <div class="text-center p-2">
@@ -297,11 +336,9 @@
           {/each}
         </div>
 
-        <!-- Activities Grid -->
         <div class="space-y-3">
           {#each activities as activity}
             <div class="grid grid-cols-7 gap-4 items-center">
-              <!-- Activity Name -->
               <div class="col-span-7 lg:col-span-7 border border-gray-200 rounded-xl p-3">
                 <div class="flex items-center space-x-3 mb-3">
                   <div 
@@ -316,7 +353,6 @@
                   </div>
                 </div>
                 
-                <!-- Week Status Grid -->
                 <div class="grid grid-cols-7 gap-2">
                   {#each weekDates as date}
                     {@const dateStr = formatDate(date)}
@@ -368,7 +404,6 @@
   {/if}
 </div>
 
-<!-- Note Modal -->
 {#if noteModal.isOpen}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6">

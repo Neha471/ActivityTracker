@@ -2,55 +2,72 @@
   import { onMount } from 'svelte';
   import DailyWeeklyView from '$lib/components/activities/DailyWeeklyView.svelte';
   import type { Activity, ActivityLog, ActivityStats } from '$lib/types/activity';
+  import apiClient from '$lib/api/client';
 
-  // Mock data for demonstration
-  let activities: Activity[] = [
-    {
-      id: '1',
-      title: 'Read 20 pages',
-      description: 'Evening reading habit',
-      category: { id: 'reading', name: 'Reading', color: '#10b981' },
-      frequency: { type: 'daily', value: 1 },
-      color: '#10b981',
-      icon: '📚',
-      notes: '',
-      isActive: true,
-      streak: 3,
-      totalCompletions: 25,
-      consistency: 83,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-30'
-    },
-    {
-      id: '2',
-      title: 'Workout',
-      description: 'Morning exercise',
-      category: { id: 'fitness', name: 'Fitness', color: '#ef4444' },
-      frequency: { type: 'custom', value: 3, period: 'week', specificDays: [1,3,5] },
-      color: '#ef4444',
-      icon: '💪',
-      notes: '',
-      isActive: true,
-      streak: 1,
-      totalCompletions: 12,
-      consistency: 57,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-30'
-    }
-  ];
-
+  let activities: Activity[] = [];
   let activityLogs: ActivityLog[] = [];
   let stats: ActivityStats = {
-    totalActivities: 2,
-    completedToday: 1,
-    pendingToday: 1,
-    avgConsistency: 70,
-    totalStreak: 4
+    totalActivities: 0,
+    completedToday: 0,
+    pendingToday: 0,
+    avgConsistency: 0,
+    totalStreak: 0
   };
+
+  async function fetchDueActivitiesForToday() {
+    try {
+      console.log('Fetching activities for today...');
+      const response = await apiClient.get('/stats/due-today');
+      const data = await response.data;
+      console.log('Fetched activities:', data.data);
+      activities = data.data || [];
+      console.log('Activities after update:', activities);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      activities = [];
+    }
+  }
+
+  async function fetchDueActivitiesForThisWeek() {
+    try {
+      const response = await apiClient.get('/stats/due-week');
+      const data = await response.data;
+      activities = data.data || [];
+    } catch (error) {
+      console.error('Error fetching weekly activities:', error);
+      activities = [];
+    }
+  }
+
+  async function fetchActivityStats() {
+    try {
+      const response = await apiClient.get('/stats');
+      const data = await response.data;
+      stats = data.data || {
+        totalActivities: 0,
+        completedToday: 0,
+        pendingToday: 0,
+        avgConsistency: 0,
+        totalStreak: 0
+      };
+    } catch (error) {
+      console.error('Error fetching activity stats:', error);
+    }
+  }
+
+  onMount(async () => {
+    console.log('Dashboard mounted, fetching data...');
+    await Promise.all([
+      fetchDueActivitiesForToday(),
+      fetchDueActivitiesForThisWeek(),
+      fetchActivityStats()
+    ]);
+    console.log('All data loaded');
+  });
+
 
   function handleMarkComplete(event: CustomEvent) {
     console.log('Mark complete:', event.detail);
-    // Update local state
     const { activityId, date } = event.detail;
     activityLogs = [...activityLogs, {
       id: crypto.randomUUID(),
@@ -161,7 +178,8 @@
     </div>
     <DailyWeeklyView 
       {activities} 
-      {activityLogs} 
+      {activityLogs}
+      selectedDate={new Date()}
       on:markComplete={handleMarkComplete}
       on:markMissed={handleMarkMissed}
       on:addNote={handleAddNote}
