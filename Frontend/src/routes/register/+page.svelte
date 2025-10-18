@@ -1,17 +1,80 @@
-<script>
+<script lang="ts">
   import { enhance } from "$app/forms";
-  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
+  import type { RegisterFormData } from "./types";
 
-  export let form;
+  let email = "";
+  let password = "";
+  let firstName = "";
+  let lastName = "";
+  let confirmPassword = "";
+  let error = "";
+  let isLoading = false;
+  export let data;
 
-  $: if ($page.data.user) {
-    goto("/dashboard");
+  export let form: RegisterFormData = {
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    confirmPassword: "",
+    error: "",
+  };
+
+  onMount(() => {
+    if (form) {
+      if (form.email) email = form.email;
+      if (form.password) password = form.password;
+      if (form.error) error = form.error;
+      if (form.firstName) firstName = form.firstName;
+      if (form.lastName) lastName = form.lastName;
+      if (form.confirmPassword) confirmPassword = form.confirmPassword;
+    }
+
+    if (data?.user) {
+      goto("/dashboard");
+    }
+  });
+
+  function handleSubmit() {
+    isLoading = true;
+    error = "";
+
+    return async ({ result, update }: { result: any; update: () => void }) => {
+      try {
+        update();
+
+        if (result.type === "failure") {
+          error = result.data?.error || "Register failed";
+        } else if (result.type === "success") {
+          // The server has set the cookies, now redirect to dashboard
+          // Use a small delay to ensure cookies are properly set
+          // await new Promise(resolve => setTimeout(resolve, 100));
+          window.location.href = "/dashboard";
+        } else if (result.type === "redirect") {
+          window.location.href = result.location;
+        }
+      } catch (err) {
+        console.error("Register error:", err);
+        error = "An error occurred during register. Please try again.";
+
+        if (err instanceof Error && err.message.includes("Redirect")) {
+          window.location.href = "/dashboard";
+        }
+      } finally {
+        isLoading = false;
+      }
+    };
+  }
+
+  function handleDirectSubmit() {
+    isLoading = true;
+    return true;
   }
 </script>
 
 <div class="min-h-screen bg-gray-50 flex w-full">
-  <!-- Left Column - Project Info -->
   <div
     class="hidden lg:flex flex-col justify-center w-1/2 bg-gradient-to-br from-indigo-600 to-blue-600 text-white"
   >
@@ -90,7 +153,6 @@
     </div>
   </div>
 
-  <!-- Right Column - Register Form -->
   <div class="flex-1 flex flex-col justify-center items-center p-8">
     <div class="w-full max-w-md space-y-8">
       <div class="text-center mb-8">
@@ -118,7 +180,14 @@
         </div>
       {/if}
 
-      <form class="mt-8 space-y-4" method="POST" use:enhance>
+      <form
+        class="mt-8 space-y-4"
+        method="POST"
+        action="?/register"
+        use:enhance={handleSubmit}
+        on:submit={handleDirectSubmit}
+        use:enhance
+      >
         <input type="hidden" name="_action" value="register" />
 
         <div
@@ -136,6 +205,8 @@
               required
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="First name"
+              bind:value={firstName}
+              on:input={(e) => firstName = e.currentTarget.value}
             />
           </div>
           <div>
@@ -150,6 +221,8 @@
               required
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Last name"
+              bind:value={lastName}
+              on:input={(e) => lastName = e.currentTarget.value}
             />
           </div>
           <div>
@@ -164,6 +237,8 @@
               required
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Email address"
+              bind:value={email}
+              on:input={(e) => email = e.currentTarget.value}
             />
           </div>
           <div>
@@ -179,6 +254,8 @@
               required
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Password"
+              bind:value={password}
+              on:input={(e) => password = e.currentTarget.value}
             />
           </div>
           <div>
@@ -195,6 +272,8 @@
               required
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Confirm Password"
+              bind:value={confirmPassword}
+              on:input={(e) => confirmPassword = e.currentTarget.value}
             />
           </div>
         </div>
@@ -210,11 +289,11 @@
 
       <p class="mt-4 text-center text-sm text-gray-600">
         By signing up, you agree to our
-        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500"
+        <a href="/terms" class="font-medium text-indigo-600 hover:text-indigo-500"
           >Terms of Service</a
         >
         and
-        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500"
+        <a href="/privacy" class="font-medium text-indigo-600 hover:text-indigo-500"
           >Privacy Policy</a
         >.
       </p>
