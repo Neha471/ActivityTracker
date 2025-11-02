@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from "react-native";
 import { useThemeContext } from "../../context/ThemeContext";
 import { Ionicons } from '@expo/vector-icons';
+import { Header } from '../../components/Header';
 
 // Types
 type StatsCardProps = {
@@ -80,7 +81,7 @@ const ActivityItem = ({ title, time, icon, color }: ActivityItemProps) => {
 };
 
 export default function OverviewScreen() {
-  const { theme, isDark, toggleTheme } = useThemeContext();
+  const { theme } = useThemeContext();
   const { colors, spacing, borderRadius } = theme;
 
   return (
@@ -88,23 +89,14 @@ export default function OverviewScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ padding: spacing.md }}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Welcome back,</Text>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>John Doe</Text>
-        </View>
-        <TouchableOpacity 
-          style={[styles.avatar, { backgroundColor: colors.primary }]}
-          onPress={toggleTheme}
-        >
-          <Ionicons 
-            name={isDark ? 'sunny' : 'moon'} 
-            size={24} 
-            color="white" 
-          />
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="Welcome back," 
+        subtitle="John Doe"
+        rightAction={{
+          icon: 'notifications-outline',
+          onPress: () => console.log('Notification pressed')
+        }}
+      />
 
       {/* Stats Cards */}
       <ScrollView 
@@ -207,27 +199,6 @@ export default function OverviewScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  greeting: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   statCard: {
     shadowColor: '#000',
