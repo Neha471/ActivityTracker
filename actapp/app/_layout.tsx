@@ -11,7 +11,6 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-// Extend the navigation theme with our custom theme
 const CustomLightTheme = {
   ...NavigationDefaultTheme,
   colors: {
