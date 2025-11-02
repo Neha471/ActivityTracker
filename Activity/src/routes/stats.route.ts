@@ -11,7 +11,7 @@ router.use(authenticate);
 
 router.get('/', enhancedActivityController.getActivityStats.bind(enhancedActivityController));
 
-router.get('/due-today', enhancedActivityController.getActivitiesDueToday.bind(enhancedActivityController));
+router.get('/due-today', enhancedActivityController.getActivitiesDueTodayOrDate.bind(enhancedActivityController));
 
 router.get('/due-week', enhancedActivityController.getActivitiesDueThisWeek.bind(enhancedActivityController));
 export default router;

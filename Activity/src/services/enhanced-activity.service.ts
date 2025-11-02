@@ -352,10 +352,11 @@ export class EnhancedActivityService {
 
   // ==================== UTILITY SERVICES ====================
 
-  async getActivitiesDueToday(userId: number): Promise<Activity[]> {
+  async getActivitiesDueTodayOrDate(userId: number, date?: string): Promise<Activity[]> {
     try {
       const allActivities = await enhancedActivityRepository.getAllActivities(userId);
-      const today = new Date();
+      const today = date ? new Date(date) : new Date();
+      console.log(today);
       const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
       const dateOfMonth = today.getDate();
 

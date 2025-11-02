@@ -407,14 +407,15 @@ export class EnhancedActivityController {
 
   // ==================== UTILITY CONTROLLERS ====================
 
-  async getActivitiesDueToday(req: ActivityRequest, res: Response, next: NextFunction) {
+  async getActivitiesDueTodayOrDate(req: ActivityRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user?.id;
+      const date = req.query?.date;
       if (!userId) {
         throw new Error('User not authenticated');
       }
 
-      const activities = await enhancedActivityService.getActivitiesDueToday(userId);
+      const activities = await enhancedActivityService.getActivitiesDueTodayOrDate(userId, date as string);
 
       res.json({
         success: true,
