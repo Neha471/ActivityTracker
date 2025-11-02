@@ -9,14 +9,15 @@ import { router } from 'expo-router';
 export default function SignUpScreen() {
   const { colors, spacing, borderRadius } = useTheme();
   const { register, isLoading } = useAuth();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSignUp = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
@@ -27,7 +28,7 @@ export default function SignUpScreen() {
     }
 
     try {
-      await register(name, email, password);
+      await register(firstName, lastName, email, password);
     } catch (error) {
       setError('Registration failed. Please try again.');
       console.error(error);
@@ -49,7 +50,7 @@ export default function SignUpScreen() {
         <View style={{ gap: spacing.md }}>
           <View>
             <Text style={[styles.label, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
-              Full Name
+              First Name
             </Text>
             <TextInput
               style={[
@@ -65,8 +66,33 @@ export default function SignUpScreen() {
               placeholder="John Doe"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
+              value={firstName}
+              onChangeText={setFirstName}
             />
           </View>
+          <View>
+            <Text style={[styles.label, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
+              Last Name
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  color: colors.textPrimary,
+                  padding: spacing.md,
+                  borderRadius: borderRadius.md,
+                },
+              ]}
+              placeholder="John Doe"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="words"
+              value={lastName}
+              onChangeText={setLastName}
+            />
+          </View>
+
 
           <View>
             <Text style={[styles.label, { color: colors.textPrimary, marginBottom: spacing.xs }]}>

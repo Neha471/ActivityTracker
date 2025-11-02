@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import api from '../lib/api';
 
 type User = {
   id: string;
@@ -12,7 +13,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -43,15 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // TODO: Replace with your actual login API call
-      // const { token, user } = await loginApi(email, password);
-      // await SecureStore.setItemAsync('authToken', token);
-      // setUser(user);
-      // For demo purposes, we'll use a mock user
-      const mockUser = { id: '1', email, name: 'Demo User' };
-      await SecureStore.setItemAsync('authToken', 'dummy-token');
-      setUser(mockUser);
-      // Navigate to the home tab after successful login
+      
+      const response = await api.post('/auth/login', { email, password });
+      const data:any = response.data;
+      const { token, user }:any = data.data;
+      await SecureStore.setItemAsync('authToken', token);
+      setUser(user);
+    
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Login failed', error);
@@ -61,18 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string) => {
     try {
       setIsLoading(true);
-      // TODO: Replace with your actual registration API call
-      // const { token, user } = await registerApi({ name, email, password });
-      // await SecureStore.setItemAsync('authToken', token);
-      // setUser(user);
-      // For demo purposes, we'll use a mock user
-      const mockUser = { id: '1', email, name };
-      await SecureStore.setItemAsync('authToken', 'dummy-token');
-      setUser(mockUser);
-      // Navigate to the home tab after successful registration
+      
+      const response = await api.post('/auth/register', { firstName, lastName, email, password });
+      const data:any = response.data;
+      const { token, user }:any = data.data;
+      await SecureStore.setItemAsync('authToken', token);
+      setUser(user);
+    
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Registration failed', error);
@@ -84,12 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      setIsLoading(true);
+      setIsLoading(true);      
       await SecureStore.deleteItemAsync('authToken');
+      
       setUser(null);
+      
+      delete api.defaults.headers.common['Authorization'];
+      
       router.replace('/(auth)/sign-in');
     } catch (error) {
       console.error('Logout failed', error);
+      await SecureStore.deleteItemAsync('authToken');
+      setUser(null);
+      router.replace('/(auth)/sign-in');
     } finally {
       setIsLoading(false);
     }
