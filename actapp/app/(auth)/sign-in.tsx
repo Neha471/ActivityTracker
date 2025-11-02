@@ -1,10 +1,30 @@
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../../hooks/useTheme';
 import { darkTheme } from '../../theme';
+import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
+import { router } from 'expo-router';
 
 export default function SignInScreen() {
   const { colors, spacing, borderRadius } = useTheme();
+  const { login, isLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+    try {
+      await login(email, password);
+    } catch (error) {
+      setError('Invalid email or password');
+      console.error(error);
+    }
+  };
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -38,6 +58,9 @@ export default function SignInScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              editable={!isLoading}
             />
           </View>
 
@@ -66,9 +89,18 @@ export default function SignInScreen() {
               placeholder="Enter your password"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              editable={!isLoading}
+              onSubmitEditing={handleSignIn}
+              returnKeyType="go"
             />
           </View>
 
+          {error ? (
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          ) : null}
+          
           <TouchableOpacity
             style={[
               styles.button,
@@ -77,11 +109,18 @@ export default function SignInScreen() {
                 padding: spacing.md,
                 borderRadius: borderRadius.md,
                 marginTop: spacing.lg,
+                opacity: isLoading ? 0.7 : 1,
               },
             ]}
             activeOpacity={0.8}
+            onPress={handleSignIn}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Sign In</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Sign In</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -89,8 +128,14 @@ export default function SignInScreen() {
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Don't have an account?{' '}
           </Text>
-          <TouchableOpacity onPress={() => {}}>
-            <Text style={[styles.footerLink, { color: colors.primary }]}>
+          <TouchableOpacity 
+            onPress={() => router.push('/(auth)/sign-up')}
+            disabled={isLoading}
+          >
+            <Text style={[styles.footerLink, { 
+              color: colors.primary,
+              opacity: isLoading ? 0.7 : 1,
+            }]}>
               Sign up
             </Text>
           </TouchableOpacity>
@@ -151,5 +196,10 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
